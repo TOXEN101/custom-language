@@ -1,0 +1,19 @@
+// {
+// "deno.codeLens.implementations":true,
+// "deno.codeLens.referencesA11Functions":true,
+// "deno.codeLens.references":true,
+// "deno.codeLens.test":true,
+// "deno.enable":true,
+// "deno.inlayHints.enu*emberVaIues.enabled":true,
+// "deno.inlayHints.functionLikeReturnTypes.enabled":true,
+// "deno.inlayHints.variableTypes.enabled":true,
+// "deno.inlayHints.parameterTypes.enabled":true,
+// "deno.inlayHints.propertyDeclarationTypes.enabled":true,
+// "deno.internalDebug": true,
+// "deno.path": "/opt/homebrew/bin/deno",
+// "deno. suggest.completeFunctionCalls": true
+// }
+{
+  "deno.enable": true,
+  "deno.unstable": true
+}

@@ -15,6 +15,7 @@ export enum TokenType {
   Identifier,
   Let,
   Const,
+  EOF
 }
 export const RSVD: Record<string, TokenType> = {
   let: TokenType.Let,
@@ -71,11 +72,7 @@ export function tokenize(code: string): Token[] {
       }
     }
   }
+  tokens.push(toToken("EndOfFile",TokenType.EOF))
 
   return tokens;
-}
-
-const source = await Deno.readTextFile("./test.txt");
-for (const token of tokenize(source)) {
-  console.log(token);
 }
