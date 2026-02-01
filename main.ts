@@ -1,4 +1,5 @@
 import Parser from "./frontend/parser.ts";
+import { evaluate } from "./runtime/interpreter.ts";
 
 
 function Tscript(){
@@ -11,7 +12,8 @@ while(true){
     if(!input|| input=="exit" || input == "die")
         Deno.exit(1);
     const program= parser.produceAST(input);
-    console.log(program)
+    const Runtime= evaluate(program);
+    console.log(Runtime)
 }
 }
 Tscript();

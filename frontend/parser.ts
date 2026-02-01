@@ -5,6 +5,8 @@ import {
   BinaryExpr,
   Identifier,
   NumericLiteral,
+  NullLiteral,
+  BooleanLiteral,
 } from "./ast.ts";
 import { tokenize, Token, TokenType } from "./lexer.ts";
 
@@ -39,19 +41,30 @@ export default class Parser {
           kind: "NumericLiteral",
           value: parseFloat(this.eat().value),
         } as NumericLiteral;
+      case TokenType.Boolean:
+        return {
+          kind: "BooleanLiteral",
+          value: this.eat().value==="true",
+        } as BooleanLiteral;
+      case TokenType.Null:
+        this.eat();
+        return {
+          kind: "NullLiteral",
+          value: "null",
+        } as NullLiteral;
       case TokenType.OpenParen: {
         this.eat();
         const value = this.parse_Expr();
         this.expect(
           TokenType.ClosedParen,
-          `un expected token (${this.at().value})- expected: ")" `,
+          `unexpected token (${this.at().value}) - expected: ")" `,
         );
         this.eat();
-        return value
+        return value;
       }
       default:
-        console.error("unexpected token found during parsing: ",this.at())
-        Deno.exit(1)
+        console.error("unexpected token found during parsing: ", this.at());
+        Deno.exit(1);
     }
   }
 
@@ -92,11 +105,40 @@ export default class Parser {
     }
     return left;
   }
+  private parse_andExpr(): Expr {
+    let left = this.parse_additiveExpr();
+    while (this.at().type == TokenType.LogAndOp) {
+      const operator = this.eat().value;
+      const right = this.parse_additiveExpr();
+      left = {
+        kind: "BinaryExpr",
+        left: left,
+        operator,
+        right: right,
+      } as BinaryExpr;
+    }
+    return left;
+  }
+  private parse_orExpr(): Expr {
+    let left = this.parse_andExpr();
+    while (this.at().type == TokenType.LogOrOp) {
+      const operator = this.eat().value;
+      const right = this.parse_andExpr();
+      left = {
+        kind: "BinaryExpr",
+        left: left,
+        operator,
+        right: right,
+      } as BinaryExpr;
+    }
+    return left;
+  }
   private parse_BinaryExpr(): Expr {
-    // assuming that addition and subtraction have the lowest precedence
+    // assuming that logical operations (and or)  have the lowest precedence
+    //  ->> addition and subtraction
     // ->> multiplication , division & mod
     // ->> Identifiers & numbers
-    return this.parse_additiveExpr();
+    return this.parse_orExpr();
   }
   private parse_Expr(): Expr {
     // assuming we only have binaryExpr

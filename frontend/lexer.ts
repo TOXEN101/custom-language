@@ -1,4 +1,5 @@
 export enum TokenType {
+  Null,
   Number,
   Boolean,
   OpenParen,
@@ -12,16 +13,19 @@ export enum TokenType {
   DivOp,
   ModOp,
   EqualOp,
+  LogOrOp,
+  LogAndOp,
   Identifier,
   Let,
   Const,
-  EOF
+  EOF,
 }
 export const RSVD: Record<string, TokenType> = {
   let: TokenType.Let,
   const: TokenType.Const,
   true: TokenType.Boolean,
   false: TokenType.Boolean,
+  null: TokenType.Null,
 };
 export interface Token {
   value: string;
@@ -50,6 +54,10 @@ export function tokenize(code: string): Token[] {
     else if (c[0] == "%") tokens.push(toToken(c.shift(), TokenType.ModOp));
     else if (c[0] == "=") tokens.push(toToken(c.shift(), TokenType.EqualOp));
     else if (c[0] == ";") tokens.push(toToken(c.shift(), TokenType.SemiColon));
+    else if ( c[0] == "|" )
+      tokens.push(toToken(c.shift(), TokenType.LogOrOp));
+    else if (c[0] == "&" )
+      tokens.push(toToken(c.shift(), TokenType.LogAndOp));
     else {
       if (c[0].match(/[0-9]/)) {
         let num = "";
@@ -61,7 +69,7 @@ export function tokenize(code: string): Token[] {
         let str = "";
         while (c.length > 0 && c[0].match(/[a-zA-Z$_]/)) str += c.shift();
         const rsvd = RSVD[str];
-        if (rsvd) tokens.push(toToken(str, rsvd));
+        if (typeof rsvd == "number") tokens.push(toToken(str, rsvd));
         else {
           tokens.push(toToken(str, TokenType.Identifier));
         }
@@ -72,7 +80,7 @@ export function tokenize(code: string): Token[] {
       }
     }
   }
-  tokens.push(toToken("EndOfFile",TokenType.EOF))
+  tokens.push(toToken("EndOfFile", TokenType.EOF));
 
   return tokens;
 }
