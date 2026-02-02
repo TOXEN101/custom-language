@@ -5,7 +5,9 @@ import {
   NumericLiteral,
   Program,
   BooleanLiteral,
+  Identifier,
 } from "../frontend/ast.ts";
+import Environment from "./environment.ts";
 import {
   NullValue,
   NumericValue,
@@ -14,10 +16,10 @@ import {
 } from "./values.ts";
 import { exit } from "node:process";
 
-function evaluate_Program(program: Program): RuntimeValue {
+function evaluate_Program(program: Program,env:Environment): RuntimeValue {
   let lastEvaluated = { type: "null", value: "null" } as RuntimeValue;
   for (const statement of program.body) {
-    lastEvaluated = evaluate(statement);
+    lastEvaluated = evaluate(statement,env);
   }
   return lastEvaluated;
 }
@@ -69,9 +71,13 @@ function evaluate_Boolean_BinaryExpr(
   }
   return {type:"boolean", value:value} as BooleanValue
 }
-function evaluate_BinaryExpr(BinExpr: BinaryExpr): RuntimeValue {
-  const lhs = evaluate(BinExpr.left);
-  const rhs = evaluate(BinExpr.right);
+function evaluate_Identifier(identifier: Identifier, env: Environment):RuntimeValue{
+  const value= env.getVar(identifier.symbol)
+  return value
+}
+function evaluate_BinaryExpr(BinExpr: BinaryExpr , env:Environment): RuntimeValue {
+  const lhs = evaluate(BinExpr.left,env);
+  const rhs = evaluate(BinExpr.right,env);
   if (lhs.type == "number" && rhs.type == "number")
     return evaluate_Numeric_BinaryExpr(
       lhs as NumericValue,
@@ -88,7 +94,7 @@ function evaluate_BinaryExpr(BinExpr: BinaryExpr): RuntimeValue {
   else return { type: "null", value: "null" } as NullValue;
 }
 
-export function evaluate(astNode: stmt): RuntimeValue {
+export function evaluate(astNode: stmt, env:Environment): RuntimeValue {
   switch (astNode.kind) {
     case "NumericLiteral":
       return {
@@ -99,10 +105,12 @@ export function evaluate(astNode: stmt): RuntimeValue {
         return{type:"boolean", value: (astNode as BooleanLiteral).value} as BooleanValue
     case "NullLiteral":
       return { type: "null", value: "null" } as NullValue;
+    case "Identifier":
+      return evaluate_Identifier(astNode as Identifier, env)
     case "BinaryExpr":
-      return evaluate_BinaryExpr(astNode as BinaryExpr);
+      return evaluate_BinaryExpr(astNode as BinaryExpr,env);
     case "Program":
-      return evaluate_Program(astNode as Program);
+      return evaluate_Program(astNode as Program,env);
     default:
       console.error("unknown node used at:", astNode);
       Deno.exit(0);
