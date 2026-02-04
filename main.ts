@@ -9,8 +9,8 @@ function Tscript(){
 
 const parser= new Parser();
 const environment= new Environment()
-environment.declareVar("zaid", {type:"number", value:947}as NumericValue)
-environment.declareVar("status", {type:"boolean", value:false}as BooleanValue)
+environment.declareVar("zaid", {type:"number", value:947}as NumericValue,false)
+environment.declareVar("status", {type:"boolean", value:false}as BooleanValue,false)
 console.log("\nTscript v.007")
 while(true){
     const input= prompt("> ")

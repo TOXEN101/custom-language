@@ -6,6 +6,7 @@ import {
   Program,
   BooleanLiteral,
   Identifier,
+  varDeclaration,
 } from "../frontend/ast.ts";
 import Environment from "./environment.ts";
 import {
@@ -16,13 +17,7 @@ import {
 } from "./values.ts";
 import { exit } from "node:process";
 
-function evaluate_Program(program: Program,env:Environment): RuntimeValue {
-  let lastEvaluated = { type: "null", value: "null" } as RuntimeValue;
-  for (const statement of program.body) {
-    lastEvaluated = evaluate(statement,env);
-  }
-  return lastEvaluated;
-}
+
 function evaluate_Numeric_BinaryExpr(
   lhs: NumericValue,
   rhs: NumericValue,
@@ -93,7 +88,17 @@ function evaluate_BinaryExpr(BinExpr: BinaryExpr , env:Environment): RuntimeValu
     
   else return { type: "null", value: "null" } as NullValue;
 }
-
+function evaluate_varDeclaration(varDec: varDeclaration, env:Environment):RuntimeValue{
+  const value=varDec.value?evaluate(varDec.value,env):{type:"null", value:"null"}as NullValue
+  return env.declareVar(varDec.identifier,value,varDec.constant)
+}
+function evaluate_Program(program: Program, env: Environment): RuntimeValue {
+  let lastEvaluated = { type: "null", value: "null" } as RuntimeValue;
+  for (const statement of program.body) {
+    lastEvaluated = evaluate(statement, env);
+  }
+  return lastEvaluated;
+}
 export function evaluate(astNode: stmt, env:Environment): RuntimeValue {
   switch (astNode.kind) {
     case "NumericLiteral":
@@ -109,6 +114,8 @@ export function evaluate(astNode: stmt, env:Environment): RuntimeValue {
       return evaluate_Identifier(astNode as Identifier, env)
     case "BinaryExpr":
       return evaluate_BinaryExpr(astNode as BinaryExpr,env);
+    case "varDeclaration":
+      return evaluate_varDeclaration(astNode as varDeclaration,env);
     case "Program":
       return evaluate_Program(astNode as Program,env);
     default:

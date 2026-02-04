@@ -1,5 +1,11 @@
+import { StartupSnapshotCallbackFn } from "node:v8";
+import { TokenType } from "./lexer.ts";
+
 export type nodeType =
+// statements
   | "Program"
+  | "varDeclaration"
+  // expressions 
   | "BinaryExpr"
   | "Identifier"
   | "NumericLiteral"
@@ -13,6 +19,14 @@ export interface Program extends stmt {
   kind: "Program";
   body: stmt[];
 }
+
+export interface varDeclaration extends stmt{
+  kind:"varDeclaration",
+  constant:boolean,
+  identifier:string,
+  value?:Expr
+}
+
 export interface Expr extends stmt {}
 
 export interface BinaryExpr extends Expr {

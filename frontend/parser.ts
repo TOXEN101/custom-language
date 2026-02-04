@@ -7,6 +7,7 @@ import {
   NumericLiteral,
   NullLiteral,
   BooleanLiteral,
+  varDeclaration,
 } from "./ast.ts";
 import { tokenize, Token, TokenType } from "./lexer.ts";
 
@@ -44,7 +45,7 @@ export default class Parser {
       case TokenType.Boolean:
         return {
           kind: "BooleanLiteral",
-          value: this.eat().value==="true",
+          value: this.eat().value === "true",
         } as BooleanLiteral;
       case TokenType.Null:
         this.eat();
@@ -144,9 +145,50 @@ export default class Parser {
     // assuming we only have binaryExpr
     return this.parse_BinaryExpr();
   }
+  private parse_varDeclaration(): stmt {
+    const isConst = this.eat().type == TokenType.Const;
+    this.expect(
+      TokenType.Identifier,
+      `unexpected token found: '${this.at().type}', expected token of type Identifier`,
+    );
+    const identifier = this.eat().value;
+    if (
+      this.at().type == TokenType.SemiColon ||
+      this.at().type == TokenType.EOF
+    ) {
+      this.eat()
+      if (isConst) throw `Must initialize the constant with a value`;
+      return {
+        kind: "varDeclaration",
+        constant: false,
+        identifier,
+      } as varDeclaration;
+    }
+    this.expect(
+      TokenType.EqualOp,
+      `unexpected token found: '${this.at().type}' after let | const, expected token of type assignment operator '='.`,
+    );
+    this.eat();
+    const varDec = {
+      kind: "varDeclaration",
+      constant: isConst,
+      identifier: identifier,
+      value: this.parse_Expr(),
+    } as varDeclaration;
+    if(this.at().type!=TokenType.SemiColon&&this.at().type!= TokenType.EOF){
+      throw `unexpected token found: '${this.at().type}', expected token of type semiColon ';'.`
+    }
+    if(this.at().type==TokenType.SemiColon) this.eat();
+    return varDec;
+  }
   private parse_stmt(): stmt {
-    //assuming that our programming language doesn't have statements (yet)
-    return this.parse_Expr();
+    switch (this.at().type) {
+      case TokenType.Const:
+      case TokenType.Let:
+        return this.parse_varDeclaration();
+      default:
+        return this.parse_Expr();
+    }
   }
   public produceAST(src: string): Program {
     this.tokens = tokenize(src);
