@@ -2,6 +2,7 @@ import {
   stmt,
   Program,
   Expr,
+  AssignmentExpr,
   BinaryExpr,
   Identifier,
   NumericLiteral,
@@ -139,8 +140,20 @@ export default class Parser {
     //  ->> addition and subtraction
     // ->> multiplication , division & mod
     // ->> Identifiers & numbers
-    return this.parse_orExpr();
+    return this.parse_AssignmentExpr();
   }
+  
+  parse_AssignmentExpr(): Expr {
+    let left = this.parse_orExpr();
+    if(this.at().type== TokenType.EqualOp){
+      this.eat()
+      const value=this.parse_AssignmentExpr();
+      left={kind:"AssignmentExpr", assignee:left,value} as AssignmentExpr
+      return left
+    }
+    return left
+  }
+
   private parse_Expr(): Expr {
     // assuming we only have binaryExpr
     return this.parse_BinaryExpr();
@@ -156,7 +169,7 @@ export default class Parser {
       this.at().type == TokenType.SemiColon ||
       this.at().type == TokenType.EOF
     ) {
-      this.eat()
+      this.eat();
       if (isConst) throw `Must initialize the constant with a value`;
       return {
         kind: "varDeclaration",
@@ -175,10 +188,13 @@ export default class Parser {
       identifier: identifier,
       value: this.parse_Expr(),
     } as varDeclaration;
-    if(this.at().type!=TokenType.SemiColon&&this.at().type!= TokenType.EOF){
-      throw `unexpected token found: '${this.at().type}', expected token of type semiColon ';'.`
+    if (
+      this.at().type != TokenType.SemiColon &&
+      this.at().type != TokenType.EOF
+    ) {
+      throw `unexpected token found: '${this.at().type}', expected token of type semiColon ';'.`;
     }
-    if(this.at().type==TokenType.SemiColon) this.eat();
+    if (this.at().type == TokenType.SemiColon) this.eat();
     return varDec;
   }
   private parse_stmt(): stmt {

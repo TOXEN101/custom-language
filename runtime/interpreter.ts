@@ -1,5 +1,6 @@
 import {
   stmt,
+  AssignmentExpr,
   BinaryExpr,
   NullLiteral,
   NumericLiteral,
@@ -70,6 +71,12 @@ function evaluate_Identifier(identifier: Identifier, env: Environment):RuntimeVa
   const value= env.getVar(identifier.symbol)
   return value
 }
+function evaluate_AssignmentExpr(astNode: AssignmentExpr, env:Environment):RuntimeValue{
+  if(astNode.assignee.kind !== "Identifier")
+    throw `Invalid LHS during assignment. ${JSON.stringify(astNode.assignee)}`
+  const value= evaluate(astNode.value,env)
+  return env.assignVar((astNode.assignee as Identifier).symbol,value )
+}
 function evaluate_BinaryExpr(BinExpr: BinaryExpr , env:Environment): RuntimeValue {
   const lhs = evaluate(BinExpr.left,env);
   const rhs = evaluate(BinExpr.right,env);
@@ -112,6 +119,8 @@ export function evaluate(astNode: stmt, env:Environment): RuntimeValue {
       return { type: "null", value: "null" } as NullValue;
     case "Identifier":
       return evaluate_Identifier(astNode as Identifier, env)
+    case "AssignmentExpr":
+      return evaluate_AssignmentExpr(astNode as AssignmentExpr, env)
     case "BinaryExpr":
       return evaluate_BinaryExpr(astNode as BinaryExpr,env);
     case "varDeclaration":
