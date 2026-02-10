@@ -15,5 +15,6 @@
 // }
 {
   "deno.enable": true,
-  "deno.unstable": true
+  "deno.unstable": true,
+  "cSpell.words": ["Tscript"]
 }

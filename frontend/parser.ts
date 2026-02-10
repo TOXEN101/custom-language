@@ -9,6 +9,8 @@ import {
   NullLiteral,
   BooleanLiteral,
   varDeclaration,
+  Property,
+  ObjectLiteral,
 } from "./ast.ts";
 import { tokenize, Token, TokenType } from "./lexer.ts";
 
@@ -140,23 +142,68 @@ export default class Parser {
     //  ->> addition and subtraction
     // ->> multiplication , division & mod
     // ->> Identifiers & numbers
-    return this.parse_AssignmentExpr();
+    return this.parse_orExpr();
   }
-  
-  parse_AssignmentExpr(): Expr {
-    let left = this.parse_orExpr();
-    if(this.at().type== TokenType.EqualOp){
-      this.eat()
-      const value=this.parse_AssignmentExpr();
-      left={kind:"AssignmentExpr", assignee:left,value} as AssignmentExpr
-      return left
+
+  private parse_ObjectExpr(): Expr {
+    if (this.at().type !== TokenType.OpenCurlyBrackets)
+      return this.parse_BinaryExpr();
+    this.eat();
+    const properties = new Array<Property>();
+    while(this.not_eof()&& this.at().type !== TokenType.ClosedCurlyBrackets){
+      this.expect(TokenType.Identifier,`object properties must start with a token of type 'key':Identifier, but got ${this.at()}`)
+      const key = this.eat().value
+
+      // {key,}
+      if(this.at().type== TokenType.Comma){
+        this.eat();
+        properties.push({kind:"Property", key }as Property)
+        continue
+      }else if( this.at().type== TokenType.ClosedCurlyBrackets){
+        properties.push({ kind: "Property", key } as Property);
+        continue;
+      }
+      // {key:value,}
+      this.expect(
+        TokenType.Colon,
+        `object properties' definition must contain a token of type ':':Colon after a key definition, but got ${this.at()}`,
+      );
+      this.eat();
+      const value= this.parse_Expr();
+      properties.push({kind:"Property", key, value})
+
+      if(this.at().type != TokenType.ClosedCurlyBrackets){
+        this.expect(
+          TokenType.Comma,
+          `object properties must be separated with a token of type ',':Colon, but got ${this.at()}`,
+        );
+        this.eat()
+      }
     }
-    return left
+    this.expect(
+      TokenType.ClosedCurlyBrackets,
+      `object definitions must end with a token of type '}':ClosedCurlyBrackets, but got ${this.at()}`,
+    );
+    this.eat()
+    return{kind:"ObjectLiteral", properties}as ObjectLiteral
+  }
+  private parse_AssignmentExpr(): Expr {
+    let left = this.parse_ObjectExpr();
+    if (this.at().type == TokenType.EqualOp) {
+      this.eat();
+      const value = this.parse_ObjectExpr();
+      left = {
+        kind: "AssignmentExpr",
+        assignee: left,
+        value,
+      } as AssignmentExpr;
+      return left;
+    }
+    return left;
   }
 
   private parse_Expr(): Expr {
-    // assuming we only have binaryExpr
-    return this.parse_BinaryExpr();
+    return this.parse_AssignmentExpr();
   }
   private parse_varDeclaration(): stmt {
     const isConst = this.eat().type == TokenType.Const;

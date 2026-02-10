@@ -7,6 +7,9 @@ export enum TokenType {
   OpenCurlyBrackets,
   ClosedCurlyBrackets,
   SemiColon,
+  Colon,
+  Comma,
+  MemberOp,// .
   PlusOp,
   MinusOp,
   MultiOp,
@@ -54,6 +57,8 @@ export function tokenize(code: string): Token[] {
     else if (c[0] == "%") tokens.push(toToken(c.shift(), TokenType.ModOp));
     else if (c[0] == "=") tokens.push(toToken(c.shift(), TokenType.EqualOp));
     else if (c[0] == ";") tokens.push(toToken(c.shift(), TokenType.SemiColon));
+    else if (c[0] == ":") tokens.push(toToken(c.shift(), TokenType.Colon));
+    else if (c[0] == ",") tokens.push(toToken(c.shift(), TokenType.Comma));
     else if ( c[0] == "|" )
       tokens.push(toToken(c.shift(), TokenType.LogOrOp));
     else if (c[0] == "&" )
@@ -73,7 +78,8 @@ export function tokenize(code: string): Token[] {
         else {
           tokens.push(toToken(str, TokenType.Identifier));
         }
-      } else if (c[0] == " " || c[0] == "\t" || c[0] == "\n") c.shift();
+      } else if (c[0] == " " || c[0] == "\t" || c[0] == "\n" || c[0] == "\r")
+        c.shift();
       else {
         console.error("illegal character found:", c[0]);
         Deno.exit(1);

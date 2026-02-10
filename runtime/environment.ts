@@ -1,10 +1,16 @@
 import { RuntimeValue } from "./values.ts";
 
+export function initGlobalScope(){
+const env= new Environment();
+return env
+}
+
 export default class Environment{
     private parent?:Environment;
     private variables: Map<string,RuntimeValue>
     private constants:Set<string>
     constructor(parentENV?:Environment){
+        const global = parentENV ? true : false;
         this.parent=parentENV;
         this.variables= new Map()
         this.constants= new Set()

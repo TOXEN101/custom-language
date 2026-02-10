@@ -1,1 +1,7 @@
-const isN$N =    true;
+const zaid = {
+    foo:12,
+    complex:{
+        bar:123
+    }
+};
+ let z = zaid.foo

@@ -8,6 +8,8 @@ import {
   BooleanLiteral,
   Identifier,
   varDeclaration,
+  ObjectLiteral,
+  Property,
 } from "../frontend/ast.ts";
 import Environment from "./environment.ts";
 import {
@@ -15,6 +17,7 @@ import {
   NumericValue,
   RuntimeValue,
   BooleanValue,
+  ObjectValue,
 } from "./values.ts";
 import { exit } from "node:process";
 
@@ -67,6 +70,16 @@ function evaluate_Boolean_BinaryExpr(
   }
   return {type:"boolean", value:value} as BooleanValue
 }
+function evaluate_ObjectExpr(astNode:ObjectLiteral,env:Environment):RuntimeValue{
+  let {properties}= astNode
+  let props= new Map<string,RuntimeValue>()
+  for( const {key,value} of properties){
+     const val= value==undefined? env.getVar(key):evaluate(value,env)
+     props.set(key,val)
+  }
+return {type:"object",properties:props } as ObjectValue
+
+}
 function evaluate_Identifier(identifier: Identifier, env: Environment):RuntimeValue{
   const value= env.getVar(identifier.symbol)
   return value
@@ -117,6 +130,8 @@ export function evaluate(astNode: stmt, env:Environment): RuntimeValue {
         return{type:"boolean", value: (astNode as BooleanLiteral).value} as BooleanValue
     case "NullLiteral":
       return { type: "null", value: "null" } as NullValue;
+    case "ObjectLiteral":
+      return evaluate_ObjectExpr(astNode as ObjectLiteral, env);
     case "Identifier":
       return evaluate_Identifier(astNode as Identifier, env)
     case "AssignmentExpr":

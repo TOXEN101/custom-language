@@ -1,10 +1,19 @@
 import Parser from "./frontend/parser.ts";
-import Environment from "./runtime/environment.ts";
+import Environment, { initGlobalScope } from "./runtime/environment.ts";
 import { evaluate } from "./runtime/interpreter.ts";
 import { BooleanValue, NumericValue } from "./runtime/values.ts";
 
-
-function Tscript(){
+// Repl();
+Run("./test.txt");
+async function  Run(fileName:string){
+    const parser= new Parser();
+    const env= initGlobalScope()
+    const src = await Deno.readTextFile(fileName)
+    const program= parser.produceAST(src);
+    const values= evaluate(program,env);
+    console.log(values)
+}
+function Repl(){
 
 
 const parser= new Parser();
@@ -21,4 +30,3 @@ while(true){
     console.log(Runtime)
 }
 }
-Tscript();
