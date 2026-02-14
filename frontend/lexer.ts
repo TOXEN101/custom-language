@@ -2,10 +2,12 @@ export enum TokenType {
   Null,
   Number,
   Boolean,
-  OpenParen,
-  ClosedParen,
-  OpenCurlyBrackets,
-  ClosedCurlyBrackets,
+  OpenParen,//(
+  ClosedParen,//)
+  OpenCurlyBrackets,//{
+  ClosedCurlyBrackets,//}
+  OpenBracket,//[
+  ClosedBracket,//]
   SemiColon,
   Colon,
   Comma,
@@ -50,12 +52,17 @@ export function tokenize(code: string): Token[] {
       tokens.push(toToken(c.shift(), TokenType.OpenCurlyBrackets));
     else if (c[0] == "}")
       tokens.push(toToken(c.shift(), TokenType.ClosedCurlyBrackets));
+    else if (c[0] == "[")
+      tokens.push(toToken(c.shift(), TokenType.OpenBracket));
+    else if (c[0] == "]")
+      tokens.push(toToken(c.shift(), TokenType.ClosedBracket));
     else if (c[0] == "+") tokens.push(toToken(c.shift(), TokenType.PlusOp));
     else if (c[0] == "-") tokens.push(toToken(c.shift(), TokenType.MinusOp));
     else if (c[0] == "*") tokens.push(toToken(c.shift(), TokenType.MultiOp));
     else if (c[0] == "/") tokens.push(toToken(c.shift(), TokenType.DivOp));
     else if (c[0] == "%") tokens.push(toToken(c.shift(), TokenType.ModOp));
     else if (c[0] == "=") tokens.push(toToken(c.shift(), TokenType.EqualOp));
+    else if (c[0] == ".") tokens.push(toToken(c.shift(), TokenType.MemberOp));
     else if (c[0] == ";") tokens.push(toToken(c.shift(), TokenType.SemiColon));
     else if (c[0] == ":") tokens.push(toToken(c.shift(), TokenType.Colon));
     else if (c[0] == ",") tokens.push(toToken(c.shift(), TokenType.Comma));

@@ -4,4 +4,5 @@ const zaid = {
         bar:123
     }
 };
- let z = zaid.foo
+let x =5;
+foo[x/5]

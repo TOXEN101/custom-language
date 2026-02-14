@@ -11,6 +11,8 @@ import {
   varDeclaration,
   Property,
   ObjectLiteral,
+  CallExpr,
+  MemberExpr,
 } from "./ast.ts";
 import { tokenize, Token, TokenType } from "./lexer.ts";
 
@@ -26,7 +28,7 @@ export default class Parser {
   private not_eof(): boolean {
     return this.at().type != TokenType.EOF;
   }
-  private expect(tokenType: TokenType, error: any) {
+  private expect(tokenType: TokenType, error: string) {
     const current = this.at();
     if (!current || current.type != tokenType) {
       console.error(error);
@@ -71,9 +73,77 @@ export default class Parser {
         Deno.exit(1);
     }
   }
+  private parse_MemberExpr(): Expr {
+    let object= this.parse_primaryExpr();
+    while (
+      this.at().type == TokenType.MemberOp ||
+      this.at().type == TokenType.OpenBracket
+    ) {
+      const operator =this.eat();
+      let property:Expr;
+      let isComputed:boolean;
+      // foo.bar, non-computed members
+      if(operator.type== TokenType.MemberOp) {
+
+        property = this.parse_primaryExpr();
+        isComputed = false;
+        if (property.kind != "Identifier")
+          throw `Expected an Identifier after member operator '.', but got ${this.at()} `;
+      }
+      // foo["bar"], computed members
+      else{
+        property= this.parse_Expr();
+        isComputed= true
+        this.expect(
+          TokenType.ClosedBracket,
+          `computed members must be followed by closing bracket ']', but got this ${this.at()}`,
+        );
+        this.eat()
+      }
+
+      object = {
+        kind: "MemberExpr",
+        property,
+        isComputed,
+        object,
+      } as MemberExpr;
+    }
+    return object
+  }
+
+  private parse_argsList():Expr[]{
+    const args= [this.parse_AssignmentExpr()]// to parse the first arg and allow assigning at the same time, e.g. foo(x=5)
+    // (x,y,z)
+    while(this.at().type== TokenType.Comma && this.eat())
+      args.push(this.parse_AssignmentExpr())
+    return args
+  }
+  private parse_args():Expr[]{
+    this.expect(TokenType.OpenParen,`function caller must be followed by open parenthesis '(', but got this ${this.at()}`)
+    this.eat();
+    const args= this.at().type== TokenType.ClosedParen? []: this.parse_argsList();
+    this.expect(TokenType.ClosedParen,`function args must be followed by close parenthesis ')', but got this ${this.at()}`)
+    this.eat();
+    return args
+  }
+  private parse_CallExpr(caller:Expr):Expr{
+    let callExpr:Expr= {kind:"CallExpr",caller, args: this.parse_args()}as CallExpr
+    // this condition stmt is here to allow computed function call chaining
+    // e.g. foo()(), when foo() returns a function 
+    if(this.at().type==TokenType.OpenParen)
+      callExpr= this.parse_CallExpr(callExpr);
+    return callExpr
+  }
+  private prase_callMemberExpr(): Expr {
+    let member = this.parse_MemberExpr();
+    if (this.at().type == TokenType.OpenParen) {
+      return this.parse_CallExpr(member);
+    }
+    return member;
+  }
 
   private parse_multiplicativeExpr(): Expr {
-    let left = this.parse_primaryExpr();
+    let left = this.prase_callMemberExpr();
 
     while (
       this.at().type == TokenType.MultiOp ||
@@ -81,7 +151,7 @@ export default class Parser {
       this.at().type == TokenType.ModOp
     ) {
       const operator = this.eat().value;
-      const right = this.parse_primaryExpr();
+      const right = this.prase_callMemberExpr();
       left = {
         kind: "BinaryExpr",
         left: left,
@@ -139,8 +209,10 @@ export default class Parser {
   }
   private parse_BinaryExpr(): Expr {
     // assuming that logical operations (and or)  have the lowest precedence
-    //  ->> addition and subtraction
+    // ->> addition and subtraction
     // ->> multiplication , division & mod
+    // ->> function calls
+    // ->> object members
     // ->> Identifiers & numbers
     return this.parse_orExpr();
   }
@@ -150,16 +222,19 @@ export default class Parser {
       return this.parse_BinaryExpr();
     this.eat();
     const properties = new Array<Property>();
-    while(this.not_eof()&& this.at().type !== TokenType.ClosedCurlyBrackets){
-      this.expect(TokenType.Identifier,`object properties must start with a token of type 'key':Identifier, but got ${this.at()}`)
-      const key = this.eat().value
+    while (this.not_eof() && this.at().type !== TokenType.ClosedCurlyBrackets) {
+      this.expect(
+        TokenType.Identifier,
+        `object properties must start with a token of type 'key':Identifier, but got ${this.at()}`,
+      );
+      const key = this.eat().value;
 
       // {key,}
-      if(this.at().type== TokenType.Comma){
+      if (this.at().type == TokenType.Comma) {
         this.eat();
-        properties.push({kind:"Property", key }as Property)
-        continue
-      }else if( this.at().type== TokenType.ClosedCurlyBrackets){
+        properties.push({ kind: "Property", key } as Property);
+        continue;
+      } else if (this.at().type == TokenType.ClosedCurlyBrackets) {
         properties.push({ kind: "Property", key } as Property);
         continue;
       }
@@ -169,23 +244,23 @@ export default class Parser {
         `object properties' definition must contain a token of type ':':Colon after a key definition, but got ${this.at()}`,
       );
       this.eat();
-      const value= this.parse_Expr();
-      properties.push({kind:"Property", key, value})
+      const value = this.parse_Expr();
+      properties.push({ kind: "Property", key, value });
 
-      if(this.at().type != TokenType.ClosedCurlyBrackets){
+      if (this.at().type != TokenType.ClosedCurlyBrackets) {
         this.expect(
           TokenType.Comma,
           `object properties must be separated with a token of type ',':Colon, but got ${this.at()}`,
         );
-        this.eat()
+        this.eat();
       }
     }
     this.expect(
       TokenType.ClosedCurlyBrackets,
       `object definitions must end with a token of type '}':ClosedCurlyBrackets, but got ${this.at()}`,
     );
-    this.eat()
-    return{kind:"ObjectLiteral", properties}as ObjectLiteral
+    this.eat();
+    return { kind: "ObjectLiteral", properties } as ObjectLiteral;
   }
   private parse_AssignmentExpr(): Expr {
     let left = this.parse_ObjectExpr();

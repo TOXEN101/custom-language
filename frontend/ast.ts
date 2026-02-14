@@ -10,6 +10,8 @@ export type nodeType =
   | "BinaryExpr"
   | "Identifier"
   | "Property"
+  | "MemberExpr"
+  | "CallExpr"
   // literals
   | "ObjectLiteral"
   | "NumericLiteral"
@@ -53,6 +55,17 @@ export interface Property extends Expr{
   kind:"Property",
   key:string,
   value?:Expr
+}
+export interface MemberExpr extends Expr{
+  kind:"MemberExpr",
+  object: Expr,
+  property:Expr,
+  isComputed:boolean
+}
+export interface CallExpr extends Expr {
+  kind:"CallExpr",
+  caller:Expr,
+  args:Expr[]
 }
 export interface ObjectLiteral extends Expr {
   kind:"ObjectLiteral",
