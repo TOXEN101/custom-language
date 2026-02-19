@@ -1,7 +1,10 @@
-import { RuntimeValue } from "./values.ts";
+import { print,showYear } from "./native functions.ts";
+import { mk_NativeFn, mk_Null, RuntimeValue } from "./values.ts";
 
 export function initGlobalScope(){
 const env= new Environment();
+env.declareVar("print",mk_NativeFn(print),true)
+env.declareVar("showYear",mk_NativeFn(showYear),true)
 return env
 }
 

@@ -10,6 +10,7 @@ import {
   varDeclaration,
   ObjectLiteral,
   Property,
+  CallExpr,
 } from "../frontend/ast.ts";
 import Environment from "./environment.ts";
 import {
@@ -18,6 +19,7 @@ import {
   RuntimeValue,
   BooleanValue,
   ObjectValue,
+  NativeFnValue
 } from "./values.ts";
 import { exit } from "node:process";
 
@@ -90,6 +92,16 @@ function evaluate_AssignmentExpr(astNode: AssignmentExpr, env:Environment):Runti
   const value= evaluate(astNode.value,env)
   return env.assignVar((astNode.assignee as Identifier).symbol,value )
 }
+function evaluate_CallExpr(astNode:CallExpr, env:Environment):RuntimeValue{
+  const args= astNode.args.map((arg)=> evaluate(arg,env))
+  const fn= evaluate(astNode.caller,env)
+  if(fn.type != "NativeFn"){
+    throw `cannot call a value that is not a function ${fn}`
+  }
+  const result= (fn as NativeFnValue).call(args,env)
+  return result
+
+}
 function evaluate_BinaryExpr(BinExpr: BinaryExpr , env:Environment): RuntimeValue {
   const lhs = evaluate(BinExpr.left,env);
   const rhs = evaluate(BinExpr.right,env);
@@ -136,6 +148,7 @@ export function evaluate(astNode: stmt, env:Environment): RuntimeValue {
       return evaluate_Identifier(astNode as Identifier, env)
     case "AssignmentExpr":
       return evaluate_AssignmentExpr(astNode as AssignmentExpr, env)
+    case "CallExpr": return evaluate_CallExpr(astNode as CallExpr,env);
     case "BinaryExpr":
       return evaluate_BinaryExpr(astNode as BinaryExpr,env);
     case "varDeclaration":

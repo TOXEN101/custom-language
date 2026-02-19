@@ -1,8 +1,5 @@
-const zaid = {
-    foo:12,
-    complex:{
-        bar:123
-    }
+let zaid= 6;
+let obj ={
+    print
 };
-let x =5;
-foo[x/5]
+print(zaid, 23, showYear())
